@@ -1,7 +1,7 @@
 # System Specification - Bank Saving System
 
 ## 1. Mockup / User Journey
-![Dashboard Mockup](file:///C:/Users/Faathir.A.N/.gemini/antigravity/brain/9bedaf44-a9f6-43a8-aa2d-c79111e33c3a/bank_saving_system_mockup_1777123060583.png)
+![Dashboard Mockup](./assets/mockup.png)
 
 ### User Flow:
 1. **Admin/User** logs in to the dashboard.
@@ -55,22 +55,22 @@ erDiagram
 
 ### Use Case Diagram
 ```mermaid
-usecaseDiagram
-    actor "Admin/User" as A
-    package "Bank Saving System" {
-        usecase "Manage Customers" as UC1
-        usecase "Manage Deposito Types" as UC2
-        usecase "Open/Close Accounts" as UC3
-        usecase "Process Deposit" as UC4
-        usecase "Process Withdrawal" as UC5
-        usecase "Calculate Interest" as UC6
-    }
-    A --> UC1
-    A --> UC2
-    A --> UC3
-    A --> UC4
-    A --> UC5
-    UC5 ..> UC6 : <<include>>
+graph TD
+    subgraph "Bank Saving System"
+        UC1[Manage Customers]
+        UC2[Manage Deposito Types]
+        UC3[Open/Close Accounts]
+        UC4[Process Deposit]
+        UC5[Process Withdrawal]
+        UC6[Calculate Interest]
+    end
+
+    Admin((Admin/User)) --> UC1
+    Admin --> UC2
+    Admin --> UC3
+    Admin --> UC4
+    Admin --> UC5
+    UC5 -.->|include| UC6
 ```
 
 ### Class Diagram (MVC Pattern)
