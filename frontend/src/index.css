@@ -1,0 +1,27 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+@layer base {
+  body {
+    @apply bg-background text-slate-200 antialiased;
+  }
+}
+
+@layer components {
+  .glass {
+    background-color: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .btn-primary {
+    @apply bg-primary hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-all active:scale-95;
+  }
+
+  .card {
+    background-color: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    @apply rounded-xl p-6 shadow-xl;
+  }
+}

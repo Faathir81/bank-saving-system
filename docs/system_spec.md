@@ -73,7 +73,46 @@ usecaseDiagram
     UC5 ..> UC6 : <<include>>
 ```
 
-## 4. API Specifications
+### Class Diagram (MVC Pattern)
+```mermaid
+classDiagram
+    class CustomerController {
+        +GetCustomers()
+        +CreateCustomer()
+    }
+    class AccountController {
+        +CreateAccount()
+        +GetAccounts()
+    }
+    class TransactionController {
+        +Deposit()
+        +Withdraw()
+    }
+    class CustomerModel {
+        +String ID
+        +String Name
+    }
+    class AccountModel {
+        +String ID
+        +Float Balance
+        +String CustomerID
+    }
+    
+    CustomerController ..> CustomerModel : "Uses"
+    AccountController ..> AccountModel : "Uses"
+    TransactionController ..> AccountModel : "Updates"
+```
+
+## 4. API Screen Mapping
+| Screen | Action | API Endpoint |
+| :--- | :--- | :--- |
+| **Dashboard** | Page Load | `GET /api/customers`, `GET /api/accounts` |
+| **Customer List** | Add Customer | `POST /api/customers` |
+| **Account Management** | Open Account | `POST /api/accounts` |
+| **Transaction Modal** | Deposit | `POST /api/transactions/deposit` |
+| **Transaction Modal** | Withdraw | `POST /api/transactions/withdraw` |
+
+## 5. API Specifications
 
 | Endpoint | Method | Description |
 | :--- | :--- | :--- |

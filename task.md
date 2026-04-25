@@ -8,11 +8,11 @@
 - [ ] Define Error Handling & Edge Cases
 
 ## Phase 2: Backend Development (Golang)
-- [ ] Initialize Go Project (Fiber + GORM)
-- [ ] Setup Database Connection
-- [ ] Implement Models (MVC)
-- [ ] Implement CRUD for Customers, Deposito Types, and Accounts
-- [ ] Implement Transaction Logic & Interest Calculation
+- [x] Initialize Go Project (Fiber + GORM)
+- [x] Setup Database Connection
+- [x] Implement Models (MVC)
+- [x] Implement CRUD for Customers, Deposito Types, and Accounts
+- [x] Implement Transaction Logic & Interest Calculation
 
 ## Phase 3: Frontend Development (React)
 - [ ] Initialize React Project (Vite + Tailwind)
