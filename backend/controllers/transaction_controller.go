@@ -1,13 +1,14 @@
 package controllers
 
 import (
+	"encoding/json"
 	"math"
+	"net/http"
 	"time"
 
 	"bank-saving-system/config"
 	"bank-saving-system/models"
-
-	"github.com/gofiber/fiber/v2"
+	"bank-saving-system/utils"
 )
 
 type TransactionRequest struct {
@@ -16,20 +17,23 @@ type TransactionRequest struct {
 	Date      string  `json:"date"` // Format: YYYY-MM-DD
 }
 
-func Deposit(c *fiber.Ctx) error {
+func Deposit(w http.ResponseWriter, r *http.Request) {
 	req := new(TransactionRequest)
-	if err := c.BodyParser(req); err != nil {
-		return c.Status(400).JSON(fiber.Map{"message": "Invalid input"})
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		utils.SendError(w, http.StatusBadRequest, "Invalid input", "")
+		return
 	}
 	if req.Amount <= 0 {
-		return c.Status(400).JSON(fiber.Map{"message": "Amount must be greater than 0"})
+		utils.SendError(w, http.StatusBadRequest, "Amount must be greater than 0", "")
+		return
 	}
 
 	txDate, _ := time.Parse("2006-01-02", req.Date)
 
 	var account models.Account
 	if err := config.DB.First(&account, "id = ?", req.AccountID).Error; err != nil {
-		return c.Status(404).JSON(fiber.Map{"message": "Account not found"})
+		utils.SendError(w, http.StatusNotFound, "Account not found", "")
+		return
 	}
 
 	// Create Transaction Record
@@ -46,38 +50,44 @@ func Deposit(c *fiber.Ctx) error {
 	config.DB.Create(&transaction)
 	config.DB.Save(&account)
 
-	return c.JSON(fiber.Map{"message": "Deposit successful", "new_balance": account.Balance})
+	utils.SendJSON(w, http.StatusOK, map[string]interface{}{"message": "Deposit successful", "new_balance": account.Balance})
 }
 
-func Withdraw(c *fiber.Ctx) error {
+func Withdraw(w http.ResponseWriter, r *http.Request) {
 	req := new(TransactionRequest)
-	if err := c.BodyParser(req); err != nil {
-		return c.Status(400).JSON(fiber.Map{"message": "Invalid input"})
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		utils.SendError(w, http.StatusBadRequest, "Invalid input", "")
+		return
 	}
 	if req.Amount <= 0 {
-		return c.Status(400).JSON(fiber.Map{"message": "Amount must be greater than 0"})
+		utils.SendError(w, http.StatusBadRequest, "Amount must be greater than 0", "")
+		return
 	}
 
 	withdrawDate, _ := time.Parse("2006-01-02", req.Date)
 
 	var account models.Account
 	if err := config.DB.Preload("DepositoType").First(&account, "id = ?", req.AccountID).Error; err != nil {
-		return c.Status(404).JSON(fiber.Map{"message": "Account not found"})
+		utils.SendError(w, http.StatusNotFound, "Account not found", "")
+		return
 	}
 
 	if account.Balance < req.Amount {
-		return c.Status(400).JSON(fiber.Map{"message": "Insufficient balance"})
+		utils.SendError(w, http.StatusBadRequest, "Insufficient balance", "")
+		return
 	}
 
 	// --- LOGIC PERHITUNGAN BUNGA (Sesuai Soal) ---
 	// Kita asumsikan #months adalah selisih bulan dari tanggal pembuatan akun/deposit terakhir ke tanggal withdrawal
 	// Untuk kemudahan tes, kita hitung selisih bulan antara created_at akun dan tanggal withdrawal yang diinput
-	
+
 	months := math.Floor(withdrawDate.Sub(account.CreatedAt).Hours() / 24 / 30)
-	if months < 0 { months = 0 }
+	if months < 0 {
+		months = 0
+	}
 
 	monthlyReturn := account.DepositoType.YearlyReturn / 12
-	
+
 	// Rumus soal: ending balance = starting balance * #months * monthly return
 	// (Seperti diskusi kita, ini adalah nilai BUNGA yang didapat)
 	interestEarned := account.Balance * months * monthlyReturn
@@ -96,7 +106,7 @@ func Withdraw(c *fiber.Ctx) error {
 	config.DB.Create(&transaction)
 	config.DB.Save(&account)
 
-	return c.JSON(fiber.Map{
+	utils.SendJSON(w, http.StatusOK, map[string]interface{}{
 		"message":          "Withdrawal successful",
 		"starting_balance": account.Balance + req.Amount,
 		"amount_withdrawn": req.Amount,

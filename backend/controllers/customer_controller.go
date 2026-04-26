@@ -1,59 +1,66 @@
 package controllers
 
 import (
+	"encoding/json"
+	"net/http"
+
 	"bank-saving-system/config"
 	"bank-saving-system/models"
-
-	"github.com/gofiber/fiber/v2"
+	"bank-saving-system/utils"
 )
 
-func GetCustomers(c *fiber.Ctx) error {
+func GetCustomers(w http.ResponseWriter, r *http.Request) {
 	var customers []models.Customer
 	config.DB.Find(&customers)
-	return c.JSON(customers)
+	utils.SendJSON(w, http.StatusOK, customers)
 }
 
-func GetCustomer(c *fiber.Ctx) error {
-	id := c.Params("id")
+func GetCustomer(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
 	var customer models.Customer
 	if err := config.DB.First(&customer, "id = ?", id).Error; err != nil {
-		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "Customer not found", "data": nil})
+		utils.SendError(w, http.StatusNotFound, "Customer not found", "")
+		return
 	}
-	return c.JSON(customer)
+	utils.SendJSON(w, http.StatusOK, customer)
 }
 
-func CreateCustomer(c *fiber.Ctx) error {
+func CreateCustomer(w http.ResponseWriter, r *http.Request) {
 	customer := new(models.Customer)
-	if err := c.BodyParser(customer); err != nil {
-		return c.Status(400).JSON(fiber.Map{"status": "error", "message": "Review your input", "data": err.Error()})
+	if err := json.NewDecoder(r.Body).Decode(customer); err != nil {
+		utils.SendError(w, http.StatusBadRequest, "Review your input", err.Error())
+		return
 	}
 
 	config.DB.Create(&customer)
-	return c.Status(201).JSON(customer)
+	utils.SendJSON(w, http.StatusCreated, customer)
 }
 
-func UpdateCustomer(c *fiber.Ctx) error {
-	id := c.Params("id")
+func UpdateCustomer(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
 	customer := new(models.Customer)
 	if err := config.DB.First(&customer, "id = ?", id).Error; err != nil {
-		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "Customer not found", "data": nil})
+		utils.SendError(w, http.StatusNotFound, "Customer not found", "")
+		return
 	}
 
-	if err := c.BodyParser(customer); err != nil {
-		return c.Status(400).JSON(fiber.Map{"status": "error", "message": "Review your input", "data": err.Error()})
+	if err := json.NewDecoder(r.Body).Decode(customer); err != nil {
+		utils.SendError(w, http.StatusBadRequest, "Review your input", err.Error())
+		return
 	}
 
 	config.DB.Save(&customer)
-	return c.JSON(customer)
+	utils.SendJSON(w, http.StatusOK, customer)
 }
 
-func DeleteCustomer(c *fiber.Ctx) error {
-	id := c.Params("id")
+func DeleteCustomer(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
 	var customer models.Customer
 	if err := config.DB.First(&customer, "id = ?", id).Error; err != nil {
-		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "Customer not found", "data": nil})
+		utils.SendError(w, http.StatusNotFound, "Customer not found", "")
+		return
 	}
 
 	config.DB.Unscoped().Delete(&customer)
-	return c.JSON(fiber.Map{"status": "success", "message": "Customer deleted successfully"})
+	utils.SendJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "Customer deleted successfully"})
 }

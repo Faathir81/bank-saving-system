@@ -2,13 +2,12 @@ package main
 
 import (
 	"log"
+	"net/http"
 
 	"bank-saving-system/config"
 	"bank-saving-system/models"
 	"bank-saving-system/routes"
-
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
+	"bank-saving-system/utils"
 )
 
 func main() {
@@ -26,14 +25,15 @@ func main() {
 		log.Fatal("Migration failed:", err)
 	}
 
-	app := fiber.New()
-
-	// Middleware
-	app.Use(cors.New())
+	mux := http.NewServeMux()
 
 	// Setup Routes
-	routes.SetupRoutes(app)
+	routes.SetupRoutes(mux)
+
+	// Wrap mux with CORS middleware
+	handler := utils.CORS(mux)
 
 	// Start Server
-	log.Fatal(app.Listen(":8080"))
+	log.Println("Server listening on :8080")
+	log.Fatal(http.ListenAndServe(":8080", handler))
 }

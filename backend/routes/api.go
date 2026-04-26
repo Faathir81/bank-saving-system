@@ -1,40 +1,34 @@
 package routes
 
 import (
-	"bank-saving-system/controllers"
+	"net/http"
 
-	"github.com/gofiber/fiber/v2"
+	"bank-saving-system/controllers"
 )
 
-func SetupRoutes(app *fiber.App) {
-	api := app.Group("/api")
-
+func SetupRoutes(mux *http.ServeMux) {
 	// Customer Routes
-	customer := api.Group("/customers")
-	customer.Get("/", controllers.GetCustomers)
-	customer.Get("/:id", controllers.GetCustomer)
-	customer.Post("/", controllers.CreateCustomer)
-	customer.Put("/:id", controllers.UpdateCustomer)
-	customer.Delete("/:id", controllers.DeleteCustomer)
+	mux.HandleFunc("GET /api/customers", controllers.GetCustomers)
+	mux.HandleFunc("GET /api/customers/{id}", controllers.GetCustomer)
+	mux.HandleFunc("POST /api/customers", controllers.CreateCustomer)
+	mux.HandleFunc("PUT /api/customers/{id}", controllers.UpdateCustomer)
+	mux.HandleFunc("DELETE /api/customers/{id}", controllers.DeleteCustomer)
 
 	// Deposito Type Routes
-	deposito := api.Group("/deposito-types")
-	deposito.Get("/", controllers.GetDepositoTypes)
-	deposito.Post("/", controllers.CreateDepositoType)
-	deposito.Put("/:id", controllers.UpdateDepositoType)
-	deposito.Delete("/:id", controllers.DeleteDepositoType)
-	deposito.Post("/seed", controllers.SeedDepositoTypes)
-	deposito.Delete("/cleanup-duplicates", controllers.CleanupDuplicateDepositoTypes)
+	mux.HandleFunc("GET /api/deposito-types", controllers.GetDepositoTypes)
+	mux.HandleFunc("POST /api/deposito-types", controllers.CreateDepositoType)
+	mux.HandleFunc("PUT /api/deposito-types/{id}", controllers.UpdateDepositoType)
+	mux.HandleFunc("DELETE /api/deposito-types/{id}", controllers.DeleteDepositoType)
+	mux.HandleFunc("POST /api/deposito-types/seed", controllers.SeedDepositoTypes)
+	mux.HandleFunc("DELETE /api/deposito-types/cleanup-duplicates", controllers.CleanupDuplicateDepositoTypes)
 
 	// Account Routes
-	account := api.Group("/accounts")
-	account.Get("/", controllers.GetAccounts)
-	account.Post("/", controllers.CreateAccount)
-	account.Put("/:id", controllers.UpdateAccount)
-	account.Delete("/:id", controllers.DeleteAccount)
+	mux.HandleFunc("GET /api/accounts", controllers.GetAccounts)
+	mux.HandleFunc("POST /api/accounts", controllers.CreateAccount)
+	mux.HandleFunc("PUT /api/accounts/{id}", controllers.UpdateAccount)
+	mux.HandleFunc("DELETE /api/accounts/{id}", controllers.DeleteAccount)
 
 	// Transaction Routes
-	transaction := api.Group("/transactions")
-	transaction.Post("/deposit", controllers.Deposit)
-	transaction.Post("/withdraw", controllers.Withdraw)
+	mux.HandleFunc("POST /api/transactions/deposit", controllers.Deposit)
+	mux.HandleFunc("POST /api/transactions/withdraw", controllers.Withdraw)
 }

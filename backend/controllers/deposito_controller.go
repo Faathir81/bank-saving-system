@@ -1,30 +1,33 @@
 package controllers
 
 import (
+	"encoding/json"
+	"net/http"
+
 	"bank-saving-system/config"
 	"bank-saving-system/models"
-
-	"github.com/gofiber/fiber/v2"
+	"bank-saving-system/utils"
 )
 
-func GetDepositoTypes(c *fiber.Ctx) error {
+func GetDepositoTypes(w http.ResponseWriter, r *http.Request) {
 	var types []models.DepositoType
 	config.DB.Find(&types)
-	return c.JSON(types)
+	utils.SendJSON(w, http.StatusOK, types)
 }
 
-func CreateDepositoType(c *fiber.Ctx) error {
+func CreateDepositoType(w http.ResponseWriter, r *http.Request) {
 	deposito := new(models.DepositoType)
-	if err := c.BodyParser(deposito); err != nil {
-		return c.Status(400).JSON(fiber.Map{"status": "error", "message": "Review your input", "data": err.Error()})
+	if err := json.NewDecoder(r.Body).Decode(deposito); err != nil {
+		utils.SendError(w, http.StatusBadRequest, "Review your input", err.Error())
+		return
 	}
 
 	config.DB.Create(&deposito)
-	return c.Status(201).JSON(deposito)
+	utils.SendJSON(w, http.StatusCreated, deposito)
 }
 
 // SeedDepositoTypes helps populate initial data
-func SeedDepositoTypes(c *fiber.Ctx) error {
+func SeedDepositoTypes(w http.ResponseWriter, r *http.Request) {
 	types := []models.DepositoType{
 		{Name: "Bronze", YearlyReturn: 0.03},
 		{Name: "Silver", YearlyReturn: 0.05},
@@ -35,11 +38,11 @@ func SeedDepositoTypes(c *fiber.Ctx) error {
 		config.DB.Where(models.DepositoType{Name: types[i].Name}).FirstOrCreate(&types[i])
 	}
 
-	return c.JSON(fiber.Map{"status": "success", "message": "Seeds planted!"})
+	utils.SendJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "Seeds planted!"})
 }
 
 // CleanupDuplicateDepositoTypes removes duplicate deposito types, keeping the oldest per name
-func CleanupDuplicateDepositoTypes(c *fiber.Ctx) error {
+func CleanupDuplicateDepositoTypes(w http.ResponseWriter, r *http.Request) {
 	result := config.DB.Exec(`
 		DELETE FROM deposito_types
 		WHERE id NOT IN (
@@ -49,38 +52,42 @@ func CleanupDuplicateDepositoTypes(c *fiber.Ctx) error {
 		)
 	`)
 	if result.Error != nil {
-		return c.Status(500).JSON(fiber.Map{"status": "error", "message": result.Error.Error()})
+		utils.SendError(w, http.StatusInternalServerError, result.Error.Error(), "")
+		return
 	}
-	return c.JSON(fiber.Map{"status": "success", "message": "Duplicates removed!", "rows_affected": result.RowsAffected})
+	utils.SendJSON(w, http.StatusOK, map[string]interface{}{"status": "success", "message": "Duplicates removed!", "rows_affected": result.RowsAffected})
 }
 
-func UpdateDepositoType(c *fiber.Ctx) error {
-	id := c.Params("id")
+func UpdateDepositoType(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
 	deposito := new(models.DepositoType)
 	if err := config.DB.First(&deposito, "id = ?", id).Error; err != nil {
-		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "Deposito Type not found"})
+		utils.SendError(w, http.StatusNotFound, "Deposito Type not found", "")
+		return
 	}
 
-	if err := c.BodyParser(deposito); err != nil {
-		return c.Status(400).JSON(fiber.Map{"status": "error", "message": "Review your input", "data": err.Error()})
+	if err := json.NewDecoder(r.Body).Decode(deposito); err != nil {
+		utils.SendError(w, http.StatusBadRequest, "Review your input", err.Error())
+		return
 	}
 
 	config.DB.Save(&deposito)
-	return c.JSON(deposito)
+	utils.SendJSON(w, http.StatusOK, deposito)
 }
 
-func DeleteDepositoType(c *fiber.Ctx) error {
-	id := c.Params("id")
+func DeleteDepositoType(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
 	var deposito models.DepositoType
 	if err := config.DB.First(&deposito, "id = ?", id).Error; err != nil {
-		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "Deposito Type not found"})
+		utils.SendError(w, http.StatusNotFound, "Deposito Type not found", "")
+		return
 	}
 
 	// Unscoped deletion as we don't have soft delete set up properly to cascade, but note that this might fail if accounts are using it.
 	if err := config.DB.Unscoped().Delete(&deposito).Error; err != nil {
-		return c.Status(400).JSON(fiber.Map{"status": "error", "message": "Cannot delete Deposito Type: it is likely in use by accounts."})
+		utils.SendError(w, http.StatusBadRequest, "Cannot delete Deposito Type: it is likely in use by accounts.", "")
+		return
 	}
 
-	return c.JSON(fiber.Map{"status": "success", "message": "Deposito Type deleted successfully"})
+	utils.SendJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "Deposito Type deleted successfully"})
 }
-

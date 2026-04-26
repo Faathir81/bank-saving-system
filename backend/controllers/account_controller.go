@@ -1,48 +1,54 @@
 package controllers
 
 import (
+	"encoding/json"
+	"net/http"
+
 	"bank-saving-system/config"
 	"bank-saving-system/models"
-
-	"github.com/gofiber/fiber/v2"
+	"bank-saving-system/utils"
 )
 
-func GetAccounts(c *fiber.Ctx) error {
+func GetAccounts(w http.ResponseWriter, r *http.Request) {
 	var accounts []models.Account
 	config.DB.Preload("Customer").Preload("DepositoType").Find(&accounts)
-	return c.JSON(accounts)
+	utils.SendJSON(w, http.StatusOK, accounts)
 }
 
-func CreateAccount(c *fiber.Ctx) error {
+func CreateAccount(w http.ResponseWriter, r *http.Request) {
 	account := new(models.Account)
-	if err := c.BodyParser(account); err != nil {
-		return c.Status(400).JSON(fiber.Map{"status": "error", "message": "Review your input", "data": err.Error()})
+	if err := json.NewDecoder(r.Body).Decode(account); err != nil {
+		utils.SendError(w, http.StatusBadRequest, "Review your input", err.Error())
+		return
 	}
 
 	// Validate if customer and deposito type exist
 	var customer models.Customer
 	if err := config.DB.First(&customer, "id = ?", account.CustomerID).Error; err != nil {
-		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "Customer not found"})
+		utils.SendError(w, http.StatusNotFound, "Customer not found", "")
+		return
 	}
 
 	var deposito models.DepositoType
 	if err := config.DB.First(&deposito, "id = ?", account.DepositoTypeID).Error; err != nil {
-		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "Deposito Type not found"})
+		utils.SendError(w, http.StatusNotFound, "Deposito Type not found", "")
+		return
 	}
 
 	config.DB.Create(&account)
-	
+
 	// Load relationships for response
 	config.DB.Preload("Customer").Preload("DepositoType").First(&account)
-	
-	return c.Status(201).JSON(account)
+
+	utils.SendJSON(w, http.StatusCreated, account)
 }
 
-func UpdateAccount(c *fiber.Ctx) error {
-	id := c.Params("id")
+func UpdateAccount(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
 	var account models.Account
 	if err := config.DB.First(&account, "id = ?", id).Error; err != nil {
-		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "Account not found"})
+		utils.SendError(w, http.StatusNotFound, "Account not found", "")
+		return
 	}
 
 	// We only allow updating the DepositoType for an account
@@ -50,27 +56,30 @@ func UpdateAccount(c *fiber.Ctx) error {
 		DepositoTypeID string `json:"deposito_type_id"`
 	}
 	var payload UpdatePayload
-	if err := c.BodyParser(&payload); err != nil {
-		return c.Status(400).JSON(fiber.Map{"status": "error", "message": "Review your input"})
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		utils.SendError(w, http.StatusBadRequest, "Review your input", "")
+		return
 	}
 
 	var deposito models.DepositoType
 	if err := config.DB.First(&deposito, "id = ?", payload.DepositoTypeID).Error; err != nil {
-		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "Deposito Type not found"})
+		utils.SendError(w, http.StatusNotFound, "Deposito Type not found", "")
+		return
 	}
 
 	account.DepositoTypeID = payload.DepositoTypeID
 	config.DB.Save(&account)
-	
+
 	config.DB.Preload("Customer").Preload("DepositoType").First(&account)
-	return c.JSON(account)
+	utils.SendJSON(w, http.StatusOK, account)
 }
 
-func DeleteAccount(c *fiber.Ctx) error {
-	id := c.Params("id")
+func DeleteAccount(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
 	var account models.Account
 	if err := config.DB.First(&account, "id = ?", id).Error; err != nil {
-		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "Account not found"})
+		utils.SendError(w, http.StatusNotFound, "Account not found", "")
+		return
 	}
 
 	// Delete related transactions first to avoid FK constraint errors
@@ -78,8 +87,9 @@ func DeleteAccount(c *fiber.Ctx) error {
 
 	// Now delete the account itself
 	if err := config.DB.Unscoped().Delete(&account).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{"status": "error", "message": err.Error()})
+		utils.SendError(w, http.StatusInternalServerError, err.Error(), "")
+		return
 	}
 
-	return c.JSON(fiber.Map{"status": "success", "message": "Account deleted successfully"})
+	utils.SendJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "Account deleted successfully"})
 }
