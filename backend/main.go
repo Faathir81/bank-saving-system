@@ -30,8 +30,8 @@ func main() {
 	// Setup Routes
 	routes.SetupRoutes(mux)
 
-	// Wrap mux with CORS middleware
-	handler := utils.CORS(mux)
+	// Wrap mux with CORS and Panic Recovery middleware
+	handler := utils.Middleware(mux)
 
 	// Start Server
 	log.Println("Server listening on :8080")

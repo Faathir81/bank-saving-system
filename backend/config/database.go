@@ -27,10 +27,17 @@ func ConnectDB() {
 		)
 	}
 
-	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	DB, err = gorm.Open(postgres.New(postgres.Config{
+		DSN:                  dsn,
+		WithoutQuotingCheck:  true, // Disable pg_catalog queries to speed up Vercel cold start
+		PreferSimpleProtocol: true, // Disables implicit prepared statement usage
+	}), &gorm.Config{
+		SkipDefaultTransaction: true,
+	})
 
 	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
+		log.Println("Failed to connect to database:", err)
+		// Don't log.Fatal, let the handler panic or return 500 later, otherwise Vercel hard crashes.
 	}
 
 	fmt.Println("Connected to Database!")
