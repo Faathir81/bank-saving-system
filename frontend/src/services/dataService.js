@@ -1,6 +1,11 @@
 import api from './api';
 
 export const dataService = {
+  getCustomers: async () => api.get('/customers'),
+  getAccounts: async () => api.get('/accounts'),
+  getDepositoTypes: async () => api.get('/deposito-types'),
+
+
   getDashboardData: async () => {
     const [custRes, accRes, depRes] = await Promise.all([
       api.get('/customers'),
@@ -39,5 +44,33 @@ export const dataService = {
       amount: parseFloat(amount), 
       date 
     });
+  },
+
+  updateCustomer: async (id, name) => {
+    return await api.put(`/customers/${id}`, { name });
+  },
+
+  deleteCustomer: async (id) => {
+    return await api.delete(`/customers/${id}`);
+  },
+
+  updateAccount: async (id, depositoTypeId) => {
+    return await api.put(`/accounts/${id}`, { deposito_type_id: depositoTypeId });
+  },
+
+  deleteAccount: async (id) => {
+    return await api.delete(`/accounts/${id}`);
+  },
+
+  createDepositoType: async (name, yearly_return) => {
+    return await api.post('/deposito-types', { name, yearly_return: parseFloat(yearly_return) });
+  },
+
+  updateDepositoType: async (id, name, yearly_return) => {
+    return await api.put(`/deposito-types/${id}`, { name, yearly_return: parseFloat(yearly_return) });
+  },
+
+  deleteDepositoType: async (id) => {
+    return await api.delete(`/deposito-types/${id}`);
   }
 };

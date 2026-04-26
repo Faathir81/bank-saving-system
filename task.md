@@ -1,13 +1,15 @@
 # Development Roadmap
 
 ## Phase 1: System Specification & Design
+
 - [x] Create Mockup/Wireframe (User Journey)
 - [x] Design Database Schema (ERD)
 - [x] Create Use Case & Class Diagrams (UML)
 - [x] Document API Specifications
-- [ ] Define Error Handling & Edge Cases
+- [x] Define Error Handling & Edge Cases
 
 ## Phase 2: Backend Development (Golang)
+
 - [x] Initialize Go Project (Fiber + GORM)
 - [x] Setup Database Connection
 - [x] Implement Models (MVC)
@@ -15,12 +17,14 @@
 - [x] Implement Transaction Logic & Interest Calculation
 
 ## Phase 3: Frontend Development (React)
-- [ ] Initialize React Project (Vite + Tailwind)
-- [ ] Build Dashboard Overview
-- [ ] Build Management UI (CRUD)
-- [ ] Build Transaction & Result UI
+
+- [x] Initialize React Project (Vite + Tailwind)
+- [x] Build Dashboard Overview
+- [x] Build Management UI (CRUD)
+- [x] Build Transaction & Result UI
 
 ## Phase 4: Finalization
-- [ ] Export Postman Collection
-- [ ] Add API Documentation (Swagger)
+
+- [x] Export Postman Collection
+- [x] Add API Documentation (Postman)
 - [ ] Push to GitLab & Deploy

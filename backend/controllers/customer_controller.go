@@ -54,6 +54,6 @@ func DeleteCustomer(c *fiber.Ctx) error {
 		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "Customer not found", "data": nil})
 	}
 
-	config.DB.Delete(&customer)
-	return c.SendStatus(204)
+	config.DB.Unscoped().Delete(&customer)
+	return c.JSON(fiber.Map{"status": "success", "message": "Customer deleted successfully"})
 }

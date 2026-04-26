@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, CreditCard, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Users, CreditCard, TrendingUp, Package } from 'lucide-react';
 
 function Sidebar({ activeTab, setActiveTab }) {
   return (
@@ -29,6 +29,12 @@ function Sidebar({ activeTab, setActiveTab }) {
           onClick={() => setActiveTab('accounts')} 
           icon={<CreditCard size={20}/>} 
           label="Accounts" 
+        />
+        <NavItem 
+          active={activeTab === 'packages'} 
+          onClick={() => setActiveTab('packages')} 
+          icon={<Package size={20}/>} 
+          label="Packages" 
         />
       </nav>
     </aside>

@@ -21,12 +21,17 @@ func SetupRoutes(app *fiber.App) {
 	deposito := api.Group("/deposito-types")
 	deposito.Get("/", controllers.GetDepositoTypes)
 	deposito.Post("/", controllers.CreateDepositoType)
+	deposito.Put("/:id", controllers.UpdateDepositoType)
+	deposito.Delete("/:id", controllers.DeleteDepositoType)
 	deposito.Post("/seed", controllers.SeedDepositoTypes)
+	deposito.Delete("/cleanup-duplicates", controllers.CleanupDuplicateDepositoTypes)
 
 	// Account Routes
 	account := api.Group("/accounts")
 	account.Get("/", controllers.GetAccounts)
 	account.Post("/", controllers.CreateAccount)
+	account.Put("/:id", controllers.UpdateAccount)
+	account.Delete("/:id", controllers.DeleteAccount)
 
 	// Transaction Routes
 	transaction := api.Group("/transactions")

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Plus, CreditCard, ArrowUpRight, ArrowDownLeft, Wallet } from 'lucide-react';
+import { Plus, CreditCard, ArrowUpRight, ArrowDownLeft, Wallet, Trash2, Edit2, Check, X } from 'lucide-react';
 import { dataService } from '../services/dataService';
 
-function AccountView({ accounts, customers, depositoTypes, onRefresh }) {
+function AccountView({ accounts, customers, depositoTypes, onRefresh, notify, confirm }) {
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [selectedType, setSelectedType] = useState('');
   const [transactionAccount, setTransactionAccount] = useState(null);
@@ -10,11 +10,46 @@ function AccountView({ accounts, customers, depositoTypes, onRefresh }) {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [calcResult, setCalcResult] = useState(null);
 
+  const [editingAccountId, setEditingAccountId] = useState(null);
+  const [editDepositoTypeId, setEditDepositoTypeId] = useState('');
+
   const handleOpenAccount = async (e) => {
     e.preventDefault();
     if (!selectedCustomer || !selectedType) return;
     await dataService.createAccount(selectedCustomer, selectedType);
+    notify("Account opened successfully!");
     onRefresh();
+  };
+
+  const handleDeleteAccount = (id) => {
+    confirm("Are you sure you want to delete this account?", async () => {
+      await dataService.deleteAccount(id);
+      notify("Account deleted!");
+      onRefresh();
+    });
+  };
+
+  const handleEditAccount = (account) => {
+    setEditingAccountId(account.id);
+    setEditDepositoTypeId(account.deposito_type_id);
+  };
+
+  const handleSaveEditAccount = async (id) => {
+    if (!editDepositoTypeId) return;
+    try {
+      await dataService.updateAccount(id, editDepositoTypeId);
+      notify("Account package updated successfully!");
+      setEditingAccountId(null);
+      setEditDepositoTypeId('');
+      onRefresh();
+    } catch (err) {
+      notify("Failed to update account.", "error");
+    }
+  };
+
+  const handleCancelEditAccount = () => {
+    setEditingAccountId(null);
+    setEditDepositoTypeId('');
   };
 
   const handleTransaction = async (type) => {
@@ -27,13 +62,13 @@ function AccountView({ accounts, customers, depositoTypes, onRefresh }) {
         setCalcResult(res.data); // Store calculation result for withdrawal
       }
       if (type === 'deposit') {
-        alert("Deposit Successful!");
+        notify("Deposit Successful!");
         setTransactionAccount(null);
         setAmount('');
         onRefresh();
       }
     } catch (err) {
-      alert(err.response?.data?.message || "Transaction failed");
+      notify(err.response?.data?.message || "Transaction failed", "error");
     }
   };
 
@@ -60,7 +95,7 @@ function AccountView({ accounts, customers, depositoTypes, onRefresh }) {
             onChange={(e) => setSelectedType(e.target.value)}
           >
             <option value="" className="bg-background">Select Deposito Package</option>
-            {depositoTypes.map(t => <option key={t.id} value={t.id} className="bg-background">{t.name} ({t.yearly_return * 100}%)</option>)}
+            {depositoTypes.map(t => <option key={t.id} value={t.id} className="bg-background">{t.name} ({parseFloat((t.yearly_return * 100).toFixed(4))}%)</option>)}
           </select>
 
           <button type="submit" className="btn-primary px-8 whitespace-nowrap">Open Account</button>
@@ -75,10 +110,27 @@ function AccountView({ accounts, customers, depositoTypes, onRefresh }) {
             <div className="absolute -top-6 -right-6 p-4 opacity-5 group-hover:opacity-10 transition-all rotate-12">
                <Wallet size={120} />
             </div>
-            
+
             <div className="relative z-10 flex justify-between items-start mb-8">
               <div>
-                <p className="text-primary text-[10px] font-bold mb-1 uppercase tracking-[0.2em]">{acc.deposito_type.name} ACCOUNT</p>
+                {editingAccountId === acc.id ? (
+                  <div className="flex items-center gap-2 mb-2">
+                     <select 
+                        className="bg-white/10 border border-white/20 rounded px-2 py-1 outline-none focus:border-primary text-[10px] uppercase font-bold text-primary tracking-[0.2em]"
+                        value={editDepositoTypeId}
+                        onChange={(e) => setEditDepositoTypeId(e.target.value)}
+                     >
+                        {depositoTypes.map(t => <option key={t.id} value={t.id} className="bg-background">{t.name}</option>)}
+                     </select>
+                     <button onClick={() => handleSaveEditAccount(acc.id)} className="text-emerald-400 p-1 hover:bg-emerald-400/20 rounded"><Check size={14}/></button>
+                     <button onClick={handleCancelEditAccount} className="text-red-400 p-1 hover:bg-red-400/20 rounded"><X size={14}/></button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 mb-1 group/edit">
+                    <p className="text-primary text-[10px] font-bold uppercase tracking-[0.2em]">{acc.deposito_type.name} ACCOUNT</p>
+                    <button onClick={() => handleEditAccount(acc)} className="opacity-0 group-hover/edit:opacity-100 text-secondary hover:text-primary transition-all"><Edit2 size={12}/></button>
+                  </div>
+                )}
                 <h3 className="text-2xl font-bold text-white">{acc.customer.name}</h3>
                 <p className="text-secondary text-[10px] font-mono mt-1 opacity-50">ID: {acc.id}</p>
               </div>
@@ -86,7 +138,7 @@ function AccountView({ accounts, customers, depositoTypes, onRefresh }) {
                 <p className="text-secondary text-xs font-medium mb-1">Current Balance</p>
                 <p className="text-3xl font-black text-white tracking-tight">
                   <span className="text-primary mr-1 text-lg">Rp</span>
-                  {acc.balance.toLocaleString()}
+                  {Math.floor(acc.balance).toLocaleString()}
                 </p>
               </div>
             </div>
@@ -103,6 +155,13 @@ function AccountView({ accounts, customers, depositoTypes, onRefresh }) {
                 className="flex-1 bg-white/5 hover:bg-white/10 p-3 rounded-lg flex items-center justify-center gap-2 transition-all"
               >
                 <ArrowDownLeft size={18} className="text-accent"/> Withdraw
+              </button>
+              <button 
+                onClick={() => handleDeleteAccount(acc.id)}
+                className="w-12 bg-white/5 hover:bg-accent/10 hover:text-accent p-3 rounded-lg flex items-center justify-center transition-all"
+                title="Delete Account"
+              >
+                <Trash2 size={18} />
               </button>
             </div>
           </div>
@@ -143,11 +202,11 @@ function AccountView({ accounts, customers, depositoTypes, onRefresh }) {
                    <p className="text-xs text-emerald-400 font-bold uppercase mb-2">Withdrawal Result</p>
                    <div className="flex justify-between text-sm mb-1">
                       <span>Interest Earned ({calcResult.months_stayed} mo):</span>
-                      <span className="font-bold">Rp {calcResult.interest_earned.toLocaleString()}</span>
+                      <span className="font-bold">Rp {Math.floor(calcResult.interest_earned).toLocaleString()}</span>
                    </div>
                    <div className="flex justify-between text-lg font-bold border-t border-emerald-500/20 pt-2 mt-2">
                       <span>Total Received:</span>
-                      <span className="text-emerald-400">Rp {calcResult.total_received.toLocaleString()}</span>
+                      <span className="text-emerald-400">Rp {Math.floor(calcResult.total_received).toLocaleString()}</span>
                    </div>
                 </div>
               )}

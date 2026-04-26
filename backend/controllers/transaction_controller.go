@@ -21,6 +21,9 @@ func Deposit(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return c.Status(400).JSON(fiber.Map{"message": "Invalid input"})
 	}
+	if req.Amount <= 0 {
+		return c.Status(400).JSON(fiber.Map{"message": "Amount must be greater than 0"})
+	}
 
 	txDate, _ := time.Parse("2006-01-02", req.Date)
 
@@ -50,6 +53,9 @@ func Withdraw(c *fiber.Ctx) error {
 	req := new(TransactionRequest)
 	if err := c.BodyParser(req); err != nil {
 		return c.Status(400).JSON(fiber.Map{"message": "Invalid input"})
+	}
+	if req.Amount <= 0 {
+		return c.Status(400).JSON(fiber.Map{"message": "Amount must be greater than 0"})
 	}
 
 	withdrawDate, _ := time.Parse("2006-01-02", req.Date)
