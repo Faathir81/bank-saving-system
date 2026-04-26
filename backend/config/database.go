@@ -14,14 +14,18 @@ var DB *gorm.DB
 func ConnectDB() {
 	var err error
 	
-	// Default DSN for local development (customize if needed)
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Jakarta",
-		getEnv("DB_HOST", "localhost"),
-		getEnv("DB_USER", "postgres"),
-		getEnv("DB_PASS", ""),
-		getEnv("DB_NAME", "bank_saving_db"),
-		getEnv("DB_PORT", "5432"),
-	)
+	// Check for DATABASE_URL (Standard for Neon/Render/Railway)
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		// Fallback to local individual params
+		dsn = fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Jakarta",
+			getEnv("DB_HOST", "localhost"),
+			getEnv("DB_USER", "postgres"),
+			getEnv("DB_PASS", ""),
+			getEnv("DB_NAME", "bank_saving_db"),
+			getEnv("DB_PORT", "5432"),
+		)
+	}
 
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
