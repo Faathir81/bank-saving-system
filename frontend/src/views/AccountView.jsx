@@ -111,7 +111,7 @@ function AccountView({ accounts, customers, depositoTypes, onRefresh, notify, co
                <Wallet size={120} />
             </div>
 
-            <div className="relative z-10 flex justify-between items-start mb-8">
+            <div className="relative z-10 flex flex-col md:flex-row justify-between items-start mb-8 gap-4 md:gap-0">
               <div>
                 {editingAccountId === acc.id ? (
                   <div className="flex items-center gap-2 mb-2">
@@ -134,7 +134,7 @@ function AccountView({ accounts, customers, depositoTypes, onRefresh, notify, co
                 <h3 className="text-2xl font-bold text-white">{acc.customer.name}</h3>
                 <p className="text-secondary text-[10px] font-mono mt-1 opacity-50">ID: {acc.id}</p>
               </div>
-              <div className="text-right">
+              <div className="text-left md:text-right">
                 <p className="text-secondary text-xs font-medium mb-1">Current Balance</p>
                 <p className="text-3xl font-black text-white tracking-tight">
                   <span className="text-primary mr-1 text-lg">Rp</span>

@@ -57,11 +57,11 @@ function App() {
   };
 
   return (
-    <div className="flex min-h-screen bg-background text-slate-200 font-sans selection:bg-primary/30">
+    <div className="flex flex-col md:flex-row min-h-screen bg-background text-slate-200 font-sans selection:bg-primary/30">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       
-      <main className="flex-1 p-8 overflow-y-auto">
-        <header className="flex justify-between items-center mb-10">
+      <main className="flex-1 p-4 md:p-8 overflow-y-auto overflow-x-hidden">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 md:mb-10">
           <div>
             <h1 className="text-3xl font-black text-white capitalize tracking-tight">{activeTab}</h1>
             <p className="text-secondary text-sm">Welcome back, Administrator</p>
