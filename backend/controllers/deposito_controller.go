@@ -3,15 +3,47 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"sync"
 
 	"bank-saving-system/config"
 	"bank-saving-system/models"
 	"bank-saving-system/utils"
 )
 
+var (
+	depositoCache []models.DepositoType
+	cacheMutex    sync.RWMutex
+)
+
+// InvalidateCache clears the in-memory cache
+func InvalidateCache() {
+	cacheMutex.Lock()
+	depositoCache = nil
+	cacheMutex.Unlock()
+}
+
 func GetDepositoTypes(w http.ResponseWriter, r *http.Request) {
+	// Try to serve from cache first
+	cacheMutex.RLock()
+	if depositoCache != nil {
+		utils.SendJSON(w, http.StatusOK, depositoCache)
+		cacheMutex.RUnlock()
+		return
+	}
+	cacheMutex.RUnlock()
+
+	// If cache is empty, query DB
 	var types []models.DepositoType
-	config.DB.Find(&types)
+	if err := config.DB.Find(&types).Error; err != nil {
+		utils.SendError(w, http.StatusInternalServerError, "Failed to fetch deposito types", err.Error())
+		return
+	}
+
+	// Save to cache
+	cacheMutex.Lock()
+	depositoCache = types
+	cacheMutex.Unlock()
+
 	utils.SendJSON(w, http.StatusOK, types)
 }
 
@@ -23,6 +55,7 @@ func CreateDepositoType(w http.ResponseWriter, r *http.Request) {
 	}
 
 	config.DB.Create(&deposito)
+	InvalidateCache() // Cache invalidation
 	utils.SendJSON(w, http.StatusCreated, deposito)
 }
 
@@ -38,6 +71,7 @@ func SeedDepositoTypes(w http.ResponseWriter, r *http.Request) {
 		config.DB.Where(models.DepositoType{Name: types[i].Name}).FirstOrCreate(&types[i])
 	}
 
+	InvalidateCache() // Cache invalidation
 	utils.SendJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "Seeds planted!"})
 }
 
@@ -55,6 +89,7 @@ func CleanupDuplicateDepositoTypes(w http.ResponseWriter, r *http.Request) {
 		utils.SendError(w, http.StatusInternalServerError, result.Error.Error(), "")
 		return
 	}
+	InvalidateCache() // Cache invalidation
 	utils.SendJSON(w, http.StatusOK, map[string]interface{}{"status": "success", "message": "Duplicates removed!", "rows_affected": result.RowsAffected})
 }
 
@@ -72,6 +107,7 @@ func UpdateDepositoType(w http.ResponseWriter, r *http.Request) {
 	}
 
 	config.DB.Save(&deposito)
+	InvalidateCache() // Cache invalidation
 	utils.SendJSON(w, http.StatusOK, deposito)
 }
 
@@ -89,5 +125,6 @@ func DeleteDepositoType(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	InvalidateCache() // Cache invalidation
 	utils.SendJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "Deposito Type deleted successfully"})
 }

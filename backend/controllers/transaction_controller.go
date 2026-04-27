@@ -9,6 +9,8 @@ import (
 	"bank-saving-system/config"
 	"bank-saving-system/models"
 	"bank-saving-system/utils"
+
+	"gorm.io/gorm"
 )
 
 type TransactionRequest struct {
@@ -36,19 +38,33 @@ func Deposit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create Transaction Record
-	transaction := models.Transaction{
-		AccountID:       account.ID,
-		Type:            "deposit",
-		Amount:          req.Amount,
-		TransactionDate: txDate,
+	// USE GORM TRANSACTION FOR ACID COMPLIANCE
+	err := config.DB.Transaction(func(tx *gorm.DB) error {
+		// Create Transaction Record
+		transaction := models.Transaction{
+			AccountID:       account.ID,
+			Type:            "deposit",
+			Amount:          req.Amount,
+			TransactionDate: txDate,
+		}
+
+		if err := tx.Create(&transaction).Error; err != nil {
+			return err
+		}
+
+		// Update Account Balance
+		account.Balance += req.Amount
+		if err := tx.Save(&account).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		utils.SendError(w, http.StatusInternalServerError, "Failed to process deposit transaction", err.Error())
+		return
 	}
-
-	// Update Account Balance
-	account.Balance += req.Amount
-
-	config.DB.Create(&transaction)
-	config.DB.Save(&account)
 
 	utils.SendJSON(w, http.StatusOK, map[string]interface{}{"message": "Deposit successful", "new_balance": account.Balance})
 }
@@ -94,17 +110,31 @@ func Withdraw(w http.ResponseWriter, r *http.Request) {
 	totalWithdrawal := req.Amount + interestEarned
 
 	// Update Record
-	transaction := models.Transaction{
-		AccountID:       account.ID,
-		Type:            "withdraw",
-		Amount:          req.Amount,
-		TransactionDate: withdrawDate,
+	// USE GORM TRANSACTION FOR ACID COMPLIANCE
+	err := config.DB.Transaction(func(tx *gorm.DB) error {
+		transaction := models.Transaction{
+			AccountID:       account.ID,
+			Type:            "withdraw",
+			Amount:          req.Amount,
+			TransactionDate: withdrawDate,
+		}
+
+		if err := tx.Create(&transaction).Error; err != nil {
+			return err
+		}
+
+		account.Balance -= req.Amount
+		if err := tx.Save(&account).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		utils.SendError(w, http.StatusInternalServerError, "Failed to process withdraw transaction", err.Error())
+		return
 	}
-
-	account.Balance -= req.Amount
-
-	config.DB.Create(&transaction)
-	config.DB.Save(&account)
 
 	utils.SendJSON(w, http.StatusOK, map[string]interface{}{
 		"message":          "Withdrawal successful",

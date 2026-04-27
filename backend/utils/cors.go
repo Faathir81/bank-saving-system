@@ -2,12 +2,15 @@ package utils
 
 import (
 	"encoding/json"
-	"net/http"
 	"log"
+	"net/http"
 )
 
-// Middleware adds CORS and Panic Recovery
+// Middleware adds CORS, Panic Recovery, and Rate Limiting
 func Middleware(next http.Handler) http.Handler {
+	// First wrap with Rate Limiter
+	rateLimitedHandler := RateLimiter(next)
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Panic Recovery
 		defer func() {
@@ -33,6 +36,7 @@ func Middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		next.ServeHTTP(w, r)
+		// Proceed to Rate Limiter then the actual Route Handler
+		rateLimitedHandler.ServeHTTP(w, r)
 	})
 }
